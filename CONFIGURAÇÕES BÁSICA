@@ -1,0 +1,108 @@
+# Instalando e configurando BIND9 Debian 7
+# Atualizando as listas do repositório linux
+apt-get update 
+# Instalando o BIND9 e editor VIM
+apt-get install -y bind9 dnsutils vim
+# Iniciando configurações do BIND
+#
+vim /etc/bind/named.conf.options
+
+#Linhas 21 a 23
+# dnssec-validation auto
+listen-on-v6 { none; };
+listen-on { localhost; 192.168.10.1; 192.168.20.1; }
+allow-transfer { none; };
+allow-query { localhost; 192.168.10.0/24; 192.168.20.0/24; };
+allow-recursion { localhost; 192.168.10.0/24; 192.168.20.0/24; };
+verion none;
+};
+
+# 2º arquivo de configuração 
+# -> Backup do arquivo original -> cp /etc/bind/named.conf.local  
+vim /etc/bind/named.conf.local
+
+//comenatarios
+zone "cursolinuxserver.int" {
+        type master;
+        file "/etc/bind/cursolinuxserver.db";
+};
+
+# Criando o arquivo /etc/bind/cursolinuxserver.db
+vim /etc/bind/cursolinuxserver.db
+
+# Configurando o arquivo
+
+$TTL  3600
+@     IN    SOA   cursolinuxserver.int.    root.cursolinuxserver.int. (
+                  1       ;Serial do arquivo
+                  604800  ;Refresh [1h]
+                  86400   ; Retry [10minutos]
+                  241920  ;Expire [1d]
+                  604800)  ;Negative Cache TTL [1h]
+@     IN    NS      cursolinuxserver.int.
+@     IN    A       192.168.10.1
+@     IN    A       192.168.20.1
+      IN    MX  5   cursolinuxserver.int.
+cliente1    IN      A   192.168.10.20
+cliente2    IN      A   192.168.20.10
+www   IN    CNAME   cursolinuxserver.int.
+
+# Salvar e sair 
+wq!
+#Reiniciando o Serviço
+/etc/init.d/bind9 restart
+
+# Configurando DNS Reverso
+vim /etc/bind/named.conf.local
+
+zone "10.168.192.in-addr.arpa" {
+      type master;
+      file "/etc/bind/10.168.192.db";
+};
+
+zone "20.168.192.in-addr.arpa" {
+      type master;
+      file "/etc/bind/20.168.192.db";
+};
+
+# Criando o arquivo /etc/bind/10.168.192.db
+cp /etc/bind/cursolinuxserver.db  /etc/bind/10.168.192.db
+vim /etc/bind/10.168.192.db
+
+# Configurando alterações no arquivo
+
+$TTL  3600
+@     IN    SOA   cursolinuxserver.int.    root.cursolinuxserver.int. (
+                  1       ;Serial do arquivo
+                  604800  ;Refresh [1h]
+                  86400   ; Retry [10minutos]
+                  241920  ;Expire [1d]
+                  604800)  ;Negative Cache TTL [1h]
+      IN    NS      cursolinuxserver.int.
+20    IN  PTR       cliente1.cursolinuxserver.int.
+
+
+# Criando o arquivo /etc/bind/20.168.192.db
+cp /etc/bind/etc/bind/10.168.192.db /etc/bind/20.168.192.db
+# Editando o arquivo
+vim /etc/bind/20.168.192.db
+
+# Configurando alterações no arquivo
+
+$TTL  3600
+@     IN    SOA   cursolinuxserver.int.    root.cursolinuxserver.int. (
+                  1       ;Serial do arquivo
+                  604800  ;Refresh [1h]
+                  86400   ; Retry [10minutos]
+                  241920  ;Expire [1d]
+                  604800)  ;Negative Cache TTL [1h]
+      IN    NS      cursolinuxserver.int.
+10    IN  PTR       cliente2.cursolinuxserver.int.
+
+#Sair salvando esc : wq!
+
+
+
+
+
+
